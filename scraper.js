@@ -2,7 +2,6 @@
  * This file should contain functions pertaining to querying through a website
  * and requesting individual pages to be scraped
  */
-const propertypalParser = require("./parsers/propertypal");
 const creds = require("./creds");
 /**
   houseTypes,
@@ -11,31 +10,62 @@ const creds = require("./creds");
   parsePage,
   parseSearchPageNumbers
  */
-function start(page) {
+async function scrapeIndividualPageUrls(page, parser) {
   // get list of search terms, zipcodes etc
   const searches = creds.searches;
-  const houseTypes = propertypalParser.houseTypes;
+  const houseTypes = parser.houseTypes;
   const firstPageLinks = [];
-  const allListPages = firstPageLinks.slice();
+  const pagedPageLinks = [];
+  let propertyPageUrls = [];
 
   searches.forEach(searchString => {
     houseTypes.forEach(houseTypeString => {
       // do getListUrlByPage and get list page
-      firstPageLinks.push(propertypalParser.getListUrlByPage(1, houseTypeString, searchString));
+      firstPageLinks.push(parser.getListUrlByPage(1, houseTypeString, searchString));
     });
   });
 
-  // go to individual page and parsePage
+  // go to the first page of each list search, and get all the rest of the page numbers
   firstPageLinks.forEach(listPageString => {
+    const stringParts = listPageString.split("/");
+    const houseType = stringParts[3];
+    const zipCode = stringParts[4];
     await page.goto(listPageString);
-    let maxPageNumbers = await propertypalParser.parseSearchPageNumbers(page);
+    const maxPageNumbers = await parser.parseSearchPageNumbers(page);
     for (var i = 2; i < maxPageNumbers; i++) {
-      // todo: figure out how to get the correct houseType
-      allListPages.push(propertypalParser.getListUrlByPage(i));
+      const page = `page-${i}`;
+      pagedPageLinks.push(parser.getListUrlByPage(page, houseType, zipCode));
     }
+
+    const parsedPropertyPageUrls = await parser.parseSearchPageLinks(page);
+    propertyPageUrls = propertyPageUrls.concat(parsedPropertyPageUrls);
   });
-  // upload to mongo
+
+  const propertyPageUrlModels = propertyPageUrls.map(url => {
+    return {
+      url: url,
+      urlType: parser.getUrlType()
+    };
+  });
+  // todo: upload to mongo
+  parser
+    .getPageModel()
+    .insertMany(propertyPageUrlModels)
+    .then(console.log)
+    .catch(console.log);
 }
+
+async function scrapeIndividualPages(page, parser) {
+  // todo: get page links from mongo
+  const profilePropertyLinks = [];
+  profilePropertyLinks.forEach(linkString => {
+    await page.goto(linkString);
+    // go to individual page and parsePage
+    const profile = await parser.parsePage(page);
+  });
+}
+
 module.exports = {
-  start
+  scrapeIndividualPageUrls,
+  scrapeIndividualPages
 };

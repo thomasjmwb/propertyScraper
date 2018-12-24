@@ -1,3 +1,6 @@
+const PropertyUrl = require("../models/propertypal-url");
+const Property = require("../models/property");
+
 const baseUrl = `https://www.propertypal.com`;
 const houseTypes = ["property-for-sale", "new-homes"];
 /**
@@ -48,10 +51,20 @@ function parseSearchPageLinks(page) {
   return linkUrls;
 }
 
+function getPageModel(){
+  return Property;
+}
+
+function getPageUrlModel(){
+  return PropertyUrl;
+}
 module.exports = {
   houseTypes,
   parseSearchPageLinks,
   getListUrlByPage,
   parsePage,
-  parseSearchPageNumbers
+  parseSearchPageNumbers,
+  getPageModel,
+  getPageUrlModel,
+  urlType: "propertypal"
 };

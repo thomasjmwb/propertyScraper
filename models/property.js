@@ -1,13 +1,18 @@
 const mongoose = require("mongoose");
 
-let propertySchema = new mongoose.Schema({
+const propertySchema = new mongoose.Schema({
   address: String,
   price: Number,
   Rates: Number,
   Bedrooms: Number,
   Bathrooms: Number,
   Heating: String,
-  url: { type: String, unique: true, required: true, dropDups: true },
+  url: { type: String, required: true },
+  dateCrawled: {
+    type: Date,
+    // `Date.now()` returns the current unix timestamp as a number
+    default: Date.now
+  },
   pictures: [
     {
       type: String
@@ -15,6 +20,6 @@ let propertySchema = new mongoose.Schema({
   ]
 });
 
-let Property = mongoose.model("Property", propertySchema);
+const Property = mongoose.model("Property", propertySchema);
 
 module.exports = Property;
