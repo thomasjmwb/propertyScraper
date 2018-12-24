@@ -2,7 +2,6 @@ const puppeteer = require("puppeteer");
 const mongoose = require("mongoose");
 const CREDS = require("./creds");
 
-const User = require("./models/user");
 const scraper = require("./scraper");
 const propertypalParser = require("./parsers/propertypal");
 
