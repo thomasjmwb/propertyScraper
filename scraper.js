@@ -43,6 +43,10 @@ async function scrapeIndividualPageUrls(page, parser) {
   for (const i in firstPageLinks) {
     await processFirstPage(firstPageLinks[i]);
   }
+  // process pagedPageLinks now that they have been populated from the firstPageLinks
+  for (const i in pagedPageLinks) {
+    await processFirstPage(pagedPageLinks[i]);
+  }
 
   const propertyPageUrlModels = propertyPageUrls.map(url => {
     return {
