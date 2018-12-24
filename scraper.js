@@ -47,13 +47,16 @@ async function scrapeIndividualPageUrls(page, parser) {
   const propertyPageUrlModels = propertyPageUrls.map(url => {
     return {
       url: url,
-      urlType: parser.getUrlType()
+      urlType: parser.urlType
     };
   });
-  // todo: upload to mongo
+  // insert the models, ordered:false so the rest will finish inserting even if there is a duplicate
+  // http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#insertMany
   parser
-    .getPageModel()
-    .insertMany(propertyPageUrlModels)
+    .getPageUrlModel()
+    .insertMany(propertyPageUrlModels, {
+      ordered: false
+    })
     .then(console.log)
     .catch(console.log);
 }

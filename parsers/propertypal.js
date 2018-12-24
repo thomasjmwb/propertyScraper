@@ -30,15 +30,16 @@ function parsePage(page) {
  */
 async function parseSearchPageNumbers(page) {
   const selector = ".paging-page.paging-last a";
-  let maxPageNumber = await page.evaluate(sel => {
-    return document.querySelector(sel).text;
-  }, selector);
-  const pageNum = parseInt(maxPageNumber);
-  if (isNaN(pageNum)) {
-    console.log(`Couldnt parse maxPageNumber: ${maxPageNumber}`);
-    return 0;
+  let maxPageNumber = 1;
+  try {
+    maxPageNumber = await page.evaluate(sel => {
+      return document.querySelector(sel).text;
+    }, selector);
+  } catch (e) {
+    console.log(`Couldnt parse maxPageNumber on ${page.url()}. Error: ${e.stack}`);
+    return maxPageNumber;
   }
-  return pageNum;
+  return parseInt(maxPageNumber);
 }
 
 /**
