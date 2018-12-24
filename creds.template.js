@@ -1,4 +1,5 @@
 // sensitive credentials go here
 module.exports = {
-    connectionString: "mongo db connection string here"
+  database: "mongo db connection string here",
+  searches: ["search terms for websites to scrape, propertypal uses zipcodes like 'BT1'."]
 };
