@@ -28,7 +28,16 @@ async function run() {
 
   await page.waitForNavigation();
 
+  let username = await page.evaluate(sel => {
+    return document
+      .querySelector(sel)
+      .getAttribute("href")
+      .replace("/", "");
+  }, usernameSelector);
+
   await page.screenshot({ path: "github.png" });
+
+  scraper.start(page);
 
   upsertUser({
     username: "test",

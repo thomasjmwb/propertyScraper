@@ -7,6 +7,7 @@ let propertySchema = new mongoose.Schema({
   Bedrooms: Number,
   Bathrooms: Number,
   Heating: String,
+  url: { type: String, unique: true, required: true, dropDups: true },
   pictures: [
     {
       type: String
