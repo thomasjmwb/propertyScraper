@@ -13,14 +13,188 @@ function getListUrlByPage(pageNumber, houseType, zipcode) {
   }
   return `${baseUrl}/${houseType}/${zipcode}/page-${pageNumber}`;
 }
+// All functions used in the browser context must be copypasted into their evaluation block
+/*
+function textTrimmer(text) {
+  return text
+    .trim()
+    .replace(/\n/g, " ")
+    .replace(/[^\S\r\n]{2,}/g, " ");
+}
+*/
 
 /**
  *
  * @param {Object} page
  * @return {Object} models/property.js
  */
-function parsePage(page) {
-  const model = {};
+async function parsePage(page) {
+  const model = {
+    parseSuccessful: true,
+    parseFailFields: [],
+    url: page.url()
+  };
+  const bodyHTML = await page.evaluate(() => document.body.innerHTML);
+  model["scrapedHTML"] = bodyHTML;
+  const onParseFailure = parseField => {
+    model.parseSuccessful = false;
+    model.parseFailFields.push(parseField);
+  };
+
+  // sold: Boolean
+  const sold = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => !!document.querySelector(".unavailable-listing-details"),
+    parseField: "sold"
+  });
+  if (sold) {
+    console.log(`Property was already sold, short circuiting parse.`);
+    return model;
+  }
+
+  // address: String,
+  const address = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return textTrimmer(document.querySelector(".prop-summary-row h1").textContent);
+    },
+    parseField: "address"
+  });
+  // price: Number,
+  const price = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return parseInt(
+        textTrimmer(document.querySelector(".price-value").textContent)
+          .match(/\d/g)
+          .join("")
+      );
+    },
+    parseField: "price"
+  });
+  // rates: Number,
+  const rates = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      const tableHeaders = [...document.querySelectorAll("#key-info-table tr th")];
+      const tableData = tableHeaders.filter(n => n.textContent.toLowerCase().indexOf("rates") > -1)[0];
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return parseInt(
+        textTrimmer(tableData.parentElement.children[1].textContent)
+          .split(".")[0]
+          .match(/\d/g)
+          .join("")
+      );
+    },
+    parseField: "rates"
+  });
+  // bedrooms: Number,
+  const bedrooms = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      const tableHeaders = [...document.querySelectorAll("#key-info-table tr th")];
+      const tableData = tableHeaders.filter(n => n.textContent.toLowerCase().indexOf("bedrooms") > -1)[0];
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return parseInt(
+        textTrimmer(tableData.parentElement.children[1].textContent)
+          .match(/\d/g)
+          .join("")
+      );
+    },
+    parseField: "bedrooms"
+  });
+  // bathrooms: Number,
+  const bathrooms = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      const tableHeaders = [...document.querySelectorAll("#key-info-table tr th")];
+      const tableData = tableHeaders.filter(n => n.textContent.toLowerCase().indexOf("bathrooms") > -1)[0];
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return parseInt(
+        textTrimmer(tableData.parentElement.children[1].textContent)
+          .match(/\d/g)
+          .join("")
+      );
+    },
+    parseField: "bathrooms"
+  });
+  // heating: String,
+  const heating = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      const tableHeaders = [...document.querySelectorAll("#key-info-table tr th")];
+      const tableData = tableHeaders.filter(n => n.textContent.toLowerCase().indexOf("heating") > -1)[0];
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return textTrimmer(tableData.parentElement.children[1].textContent);
+    },
+    parseField: "heating"
+  });
+  // pictures: [String]
+  const pictures = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => [...document.querySelectorAll(".Slideshow-slide img")].map(n => n.getAttribute("src")),
+    parseField: "pictures"
+  });
+  // style: String
+  const style = await parseProfileValue(page, {
+    model,
+    onParseFailure,
+    pageExecution: () => {
+      const tableHeaders = [...document.querySelectorAll("#key-info-table tr th")];
+      const tableData = tableHeaders.filter(n => n.textContent.toLowerCase().indexOf("style") > -1)[0];
+      function textTrimmer(text) {
+        return text.trim().replace(/[^\S\r\n]{2,}/g, " ");
+      }
+      return textTrimmer(tableData.parentElement.children[1].textContent);
+    },
+    parseField: "style"
+  });
+
+  return model;
+}
+
+/**
+ *
+ * @param {pupeteer page object} page
+ * @param {Object} options
+ * @param {Function} pageExecution - function puppeteer will execute to parse a value from the page
+ * @param {Function} onParseFailure - function to execute with parseField on failure
+ * @param {String} parseField - parsed field
+ * @param {Object} model - parsed object, mongodb moodel
+ */
+async function parseProfileValue(page, options) {
+  const { pageExecution, onParseFailure, parseField, model } = options;
+  let parsedValue = "";
+  try {
+    parsedValue = await page.evaluate(pageExecution);
+  } catch (e) {
+    onParseFailure(parseField);
+    console.log(`Unable to parseProfileValue: ${parseField}. Error: ${e.stack}`);
+  }
+  model[parseField] = parsedValue;
+  return parsedValue;
 }
 
 /**

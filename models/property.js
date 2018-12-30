@@ -2,19 +2,22 @@ const mongoose = require("mongoose");
 
 const propertySchema = new mongoose.Schema({
   url: { type: String, required: true },
-  sold: Boolean,
+  parseSuccessful: Boolean,
+  scrapedHTML: String,
   //property fields
   address: String,
   price: Number,
-  Rates: Number,
-  Bedrooms: Number,
-  Bathrooms: Number,
-  Heating: String,
+  rates: Number,
+  bedrooms: Number,
+  bathrooms: Number,
+  heating: String,
+  style: String,
   pictures: [
     {
       type: String // urls
     }
   ],
+  sold: Boolean,
 
   dateCrawled: {
     type: Date,

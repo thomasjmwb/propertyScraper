@@ -6,10 +6,10 @@ const scraper = require("./scraper");
 const propertypalParser = require("./parsers/propertypal");
 
 async function run() {
-  //   const browser = await puppeteer.launch();
-  const browser = await puppeteer.launch({
-    headless: false
-  });
+  const browser = await puppeteer.launch();
+  // const browser = await puppeteer.launch({
+  //   headless: false
+  // });
   const page = await browser.newPage();
 
   if (mongoose.connection.readyState == 0) {
@@ -17,7 +17,7 @@ async function run() {
   } else {
     return console.log(" mongoose connection wasnt ready");
   }
-  await scraper.scrapeIndividualPageUrls(page, propertypalParser);
+  await scraper.scrapeIndividualPages(page, propertypalParser);
 
   browser.close();
 }

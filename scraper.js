@@ -40,11 +40,15 @@ async function scrapeIndividualPageUrls(page, parser) {
   });
 
   // go to the first page of each list search, and get all the rest of the page numbers
+  const firstLength = firstPageLinks.length;
   for (const i in firstPageLinks) {
+    console.log(`processing first page links: ${i}/${firstLength}`);
     await processFirstPage(firstPageLinks[i]);
   }
   // process pagedPageLinks now that they have been populated from the firstPageLinks
+  const pagedLength = pagedPageLinks.length;
   for (const i in pagedPageLinks) {
+    console.log(`processing paged page links: ${i}/${pagedLength}`);
     await processFirstPage(pagedPageLinks[i]);
   }
 
@@ -67,12 +71,22 @@ async function scrapeIndividualPageUrls(page, parser) {
 
 async function scrapeIndividualPages(page, parser) {
   // todo: get page links from mongo
-  const profilePropertyLinks = [];
-  profilePropertyLinks.forEach(async linkString => {
-    await page.goto(linkString);
-    // go to individual page and parsePage
+
+  const profilePropertyLinks = await parser.getPageUrlModel().find();
+  const profileModels = [];
+  const linksLength = profilePropertyLinks.length;
+  for (const i in profilePropertyLinks) {
+    console.log(`processing property page ${i}/${linksLength}`);
+    await page.goto(profilePropertyLinks[i].url);
     const profile = await parser.parsePage(page);
-  });
+    profileModels.push(profile);
+  }
+
+  parser
+    .getPageModel()
+    .insertMany(profileModels, {})
+    .then(console.log)
+    .catch(console.log);
 }
 
 module.exports = {
